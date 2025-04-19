@@ -12,12 +12,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Prompt&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --bg-color: radial-gradient(ellipse at top left, #111722, #0e0e0e);
+      --card-color: #1e1e2f;
+      --text-color: #ffffff;
+      --icon-bg: #343a50;
+      --highlight-box: linear-gradient(145deg, #34334f, #1b1b2e);
+    }
+
+    body.light {
+      --bg-color: linear-gradient(to bottom, #f9f9f9, #e0e0e0);
+      --card-color: #ffffff;
+      --text-color: #222222;
+      --icon-bg: #f0f0f0;
+      --highlight-box: linear-gradient(to bottom, #e6e6e6, #fefefe);
+    }
+
     body {
       font-family: 'Prompt', sans-serif;
-      background: radial-gradient(ellipse at top left, #111722, #0e0e0e);
-      color: white;
-      position: relative;
-      overflow-x: hidden;
+      background: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.5s, color 0.5s;
     }
 
     canvas#bgCanvas {
@@ -31,12 +46,13 @@
     .card {
       border: none;
       border-radius: 20px;
-      background: #1e1e2f;
+      background: var(--card-color);
+      color: var(--text-color);
+      transition: background 0.5s, color 0.5s;
     }
 
     h1, h4, h5, p, strong, .section-label {
-      color: #ffffff !important;
-      text-shadow: 0 0 4px rgba(255,255,255,0.2);
+      color: var(--text-color) !important;
     }
 
     .aqi-badge {
@@ -60,23 +76,21 @@
       font-size: 1.3rem;
       padding: 14px 18px;
       border-radius: 14px;
-      background: #343a50;
+      background: var(--icon-bg);
       margin-bottom: 14px;
       display: flex;
       align-items: center;
       gap: 16px;
-      color: #ffffff;
       font-weight: 500;
       box-shadow: 0 0 6px rgba(255,255,255,0.08);
     }
 
     .icon-block i {
       font-size: 1.7rem;
-      color: #ffffff;
     }
 
     .highlight-box {
-      background: linear-gradient(145deg, #34334f, #1b1b2e);
+      background: var(--highlight-box);
       border-radius: 16px;
       padding: 30px;
       text-align: center;
@@ -91,10 +105,11 @@
     }
 
     .chart-card {
-      background: #202033;
+      background: var(--card-color);
       border-radius: 20px;
       padding: 2rem;
       margin-bottom: 3rem;
+      color: var(--text-color);
     }
 
     .skyline {
@@ -103,11 +118,25 @@
       opacity: 0.1;
       height: 100px;
     }
+
+    .mode-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
 
-<!-- Dynamic Background Canvas -->
+<!-- Theme Toggle -->
+<div class="mode-toggle">
+  <button class="btn btn-sm btn-outline-light" onclick="toggleTheme()">
+    <i class="fa-solid fa-circle-half-stroke"></i> Toggle Theme
+  </button>
+</div>
+
+<!-- Dynamic Background -->
 <canvas id="bgCanvas"></canvas>
 
 <div class="container py-5">
@@ -156,28 +185,24 @@
     </div>
   </div>
 
-  <!-- Graphs -->
+  <!-- Charts -->
   <div class="chart-section">
     <div class="chart-card">
       <h5>PM2.5 (µg/m³)</h5>
       <canvas id="pm25Chart"></canvas>
     </div>
-
     <div class="chart-card">
       <h5>PM10 (µg/m³)</h5>
       <canvas id="pm10Chart"></canvas>
     </div>
-
     <div class="chart-card">
       <h5>Humidity (%)</h5>
       <canvas id="humidityChart"></canvas>
     </div>
-
     <div class="chart-card">
       <h5>Temperature (°C)</h5>
       <canvas id="temperatureChart"></canvas>
     </div>
-
     <div class="chart-card">
       <h5>PM2.5 vs PM10</h5>
       <canvas id="pmCompareChart"></canvas>
@@ -185,9 +210,20 @@
   </div>
 </div>
 
-<!-- Chart.js + Canvas BG -->
+<!-- Canvas + Theme + Charts -->
 <script>
-  // Dynamic Dust Particle Background
+  // Theme Mode
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  }
+  window.onload = () => {
+    if (localStorage.getItem('theme') === 'light') {
+      document.body.classList.add('light');
+    }
+  }
+
+  // Floating Dust Animation
   const canvas = document.getElementById('bgCanvas');
   const ctx = canvas.getContext('2d');
   let particles = [];
@@ -210,7 +246,6 @@
   }
 
   let angle = 0;
-
   function drawParticles() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "rgba(255,255,255,0.08)";
@@ -227,17 +262,15 @@
       let p = particles[i];
       p.y += Math.cos(angle + p.d) + 0.3;
       p.x += Math.sin(angle) * 0.3;
-
       if (p.y > canvas.height || p.x > canvas.width || p.x < 0) {
         p.x = Math.random() * canvas.width;
         p.y = -10;
       }
     }
   }
-
   setInterval(drawParticles, 33);
 
-  // Chart Visualizations
+  // Chart.js Setup
   const labels = {{ timestamps|safe }};
   const pm25 = {{ pm_values|safe }};
   const pm10 = {{ pm10_values|safe }};
@@ -246,9 +279,7 @@
 
   const chartOptions = {
     responsive: true,
-    scales: {
-      y: { beginAtZero: true }
-    }
+    scales: { y: { beginAtZero: true } }
   };
 
   new Chart(document.getElementById('pm25Chart'), {
@@ -320,20 +351,8 @@
     data: {
       labels: labels,
       datasets: [
-        {
-          label: 'PM2.5',
-          data: pm25,
-          borderColor: '#ffc107',
-          tension: 0.3,
-          fill: false
-        },
-        {
-          label: 'PM10',
-          data: pm10,
-          borderColor: '#36a2eb',
-          tension: 0.3,
-          fill: false
-        }
+        { label: 'PM2.5', data: pm25, borderColor: '#ffc107', tension: 0.3, fill: false },
+        { label: 'PM10', data: pm10, borderColor: '#36a2eb', tension: 0.3, fill: false }
       ]
     },
     options: chartOptions
