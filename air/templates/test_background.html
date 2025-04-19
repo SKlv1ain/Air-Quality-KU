@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dynamic Background Test</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: radial-gradient(ellipse at top left, #111722, #0e0e0e);
+    }
+
+    canvas#bgCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      width: 100vw;
+      height: 100vh;
+      filter: blur(1px) brightness(0.6);
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 20%;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<div class="content">
+  <h1>Hello from DustSense</h1>
+  <p>This is a floating dust background test.</p>
+</div>
+
+<script>
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  let particles = [];
+  for (let i = 0; i < 150; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 1,
+      d: Math.random() * 100
+    });
+  }
+
+  let angle = 0;
+
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.shadowColor = "#ffffff";
+    ctx.shadowBlur = 1;
+
+    for (let i = 0; i < particles.length; i++) {
+      let p = particles[i];
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+      ctx.fill();
+    }
+
+    angle += 0.002;
+
+    for (let i = 0; i < particles.length; i++) {
+      let p = particles[i];
+      p.y += Math.cos(angle + p.d) + 0.3;
+      p.x += Math.sin(angle) * 0.3;
+
+      if (p.y > canvas.height || p.x > canvas.width || p.x < 0) {
+        p.x = Math.random() * canvas.width;
+        p.y = -10;
+      }
+    }
+
+    requestAnimationFrame(drawParticles);
+  }
+
+  drawParticles();
+</script>
+
+</body>
+</html>
